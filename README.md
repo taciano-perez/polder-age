@@ -7,7 +7,7 @@ Ideas:
 - Age of Polders
 
 ## Short Description
-Turn-based strategy game. Uses a tile map (still deciding between top-down or isometric). Each tile has an altitude level, and low tiles are periodically flooded by sea and rivers. Tiles can have improvements that modify altitude and productivity. Production is required to build impromevents.
+Turn-based strategy game. Uses a tile map (top-down view). Each tile has an altitude level, and low tiles are periodically flooded by sea and rivers. Tiles can have improvements that modify altitude and productivity. Production is required to build improvements.
 
 ## Story
 You are the leader of a small farming community constantly threatened by floods, and your quest is to turn a swamp into a burgeoning civilization.
