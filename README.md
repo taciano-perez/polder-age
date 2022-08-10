@@ -10,7 +10,7 @@ Ideas:
 Turn-based strategy game. Uses a tile map (top-down view). Each tile has an altitude level, and low tiles are periodically flooded by sea and rivers. Tiles can have improvements that modify altitude and productivity. Production is required to build improvements.
 
 ## Story
-You are the leader of a small farming community constantly threatened by floods, and your quest is to turn a swamp into a burgeoning civilization.
+You are the leader of a small farming community constantly threatened by floods, and your quest is to turn a swamp into a burgeoning civilization. In your journey, you will not change only history, but geography. "God made the World, but the Dutch made The Netherlands."
 
 ## Basic Game Loops
 1. Turn start (show map).
