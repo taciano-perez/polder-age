@@ -49,6 +49,8 @@ You are the leader of a small farming community constantly threatened by floods,
 ## Stretch Goals
 - Introduce units.
 - Animate tiles/units/improvements.
+- Web deployment with WASM.
+- Random events (beyond flooding) with positive and/or negative consequences (similar to Crusader Kings)
 - Seasons.
 - Fogged map that is progressively discovered.
 - Add competing nations and introduce war mechanics. War mechanics would be turn-based, similar to Imperialism.

@@ -21,7 +21,7 @@ impl MapBuilder {
         // land
         self.fill_with_random_land_tiles(rng);
         // sea
-        let coast_row = rng.range(3, (SCREEN_HEIGHT / 2) - 3);
+        let coast_row = rng.range(3, (SCREEN_HEIGHT / 2) - 5);
         self.fill_rect(Rect::with_size(0, 0, SCREEN_WIDTH, coast_row), MapTile::new(SEA_BOTTOM));
         // river
         let river_col = rng.range(6, (SCREEN_WIDTH / 2) - 6);
