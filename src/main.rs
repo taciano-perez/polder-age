@@ -49,21 +49,21 @@ impl GameState for State {
 
         // TEST
         let mut input = INPUT.lock();
-        let mouse_pixels = input.mouse_pixel_pos();
-        ctx.print(
-            1,
-            1,
-            &format!(
-                "Mouse pixel position: {}, {}",
-                mouse_pixels.0, mouse_pixels.1
-            ),
-        );
+        // let mouse_pixels = input.mouse_pixel_pos();
+        // ctx.print(
+        //     1,
+        //     1,
+        //     &format!(
+        //         "Mouse pixel position: {}, {}",
+        //         mouse_pixels.0, mouse_pixels.1
+        //     ),
+        // );
         let mouse_tile = input.mouse_tile(0);
-        ctx.print(
-            1,
-            2,
-            &format!("Mouse tile position: {}, {}", mouse_tile.x, mouse_tile.y),
-        );
+        // ctx.print(
+        //     1,
+        //     2,
+        //     &format!("Mouse tile position: {}, {}", mouse_tile.x, mouse_tile.y),
+        // );
         ctx.print(1, 3, &format!("Active Command: {:?}", self.active_command));
         ctx.print(1, 4, &format!("Selected tile x:{}, y: {}", self.selected_tile.x, self.selected_tile.y));
 

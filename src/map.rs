@@ -125,10 +125,29 @@ impl Map {
     pub fn increase_height(&mut self, x: i32, y: i32) {
         let idx = map_idx(x, y);
         self.tiles[idx].increase_height();
+        if self.tiles[idx].water > 0 { self.trigger_event(x, y, WaterEvent::Drain, 1); }
     }
     pub fn lower_height(&mut self, x: i32, y: i32) {
         let idx = map_idx(x, y);
         self.tiles[idx].lower_height();
+        self.flood_if_needed(x, y);
+    }
+    fn flood_if_needed(&mut self, x: i32, y: i32) {
+        let neighbors = self.get_neighbors_water_level(x, y);
+        let min = neighbors.iter().min();
+        if let Some(Some(min)) = min {
+            if let Some(water_level) = self.get_water_level(x, y) {
+                if water_level < *min {
+                    self.trigger_event(x, y, WaterEvent::Flood, min - water_level);
+                }
+            }
+        }
+    }
+    fn get_neighbors_water_level(&mut self, x: i32, y: i32) -> Vec<Option<i32>> {
+        vec![self.get_water_level(x+1, y),
+        self.get_water_level(x-1, y),
+        self.get_water_level(x, y+1),
+        self.get_water_level(x, y-1)]
     }
     pub fn get_water_level(&mut self,x: i32, y: i32) -> Option<i32> {
         if !(0..SCREEN_WIDTH).contains(&x) { return None; };
@@ -150,11 +169,11 @@ impl Map {
             WaterEvent::Drain => { to_be_visited.push((x, y, self.tiles[idx].water_level()-1)); },
         }
         while let Some((x, y, level)) = to_be_visited.pop() {
-            self.dfs_update(Coordinate::new(x, y), event_type, amount, level, &mut visited, &mut to_be_visited);
+            self.bfs_update(Coordinate::new(x, y), event_type, amount, level, &mut visited, &mut to_be_visited);
         }
     }
-    // depth-first spread of water.
-    fn dfs_update(&mut self, pos: Coordinate, event_type: WaterEvent, amount: i32, level: i32, visited: &mut [Vec<bool>], to_be_visited: &mut Vec<(i32, i32, i32)>) {
+    // breadth-first spread of water.
+    fn bfs_update(&mut self, pos: Coordinate, event_type: WaterEvent, amount: i32, level: i32, visited: &mut [Vec<bool>], to_be_visited: &mut Vec<(i32, i32, i32)>) {
         let x = pos.x;
         let y = pos.y;
         let x_ = x as usize;
@@ -171,8 +190,7 @@ impl Map {
         // mark as visited
         visited[x_][y_] = true;
 
-        println!("Visiting {:?}", self.tiles[idx]);
-
+        // println!("Visiting {:?}", self.tiles[idx]);
         match event_type {
             WaterEvent::Flood => {
                 if self.tiles[idx].height >= MAX_HEIGHT { return }
@@ -187,57 +205,36 @@ impl Map {
 
                     self.tiles[idx].add_water(amount);
                     // println!("Increasing water amount by {}, new water: {}, new level: {}", amount, self.tiles[idx].water, self.tiles[idx].water_level());
-
                     // spread to neighboring tiles with lowest water level
-                    let neighbors = vec![self.get_water_level(x+1, y),
-                                                        self.get_water_level(x-1, y),
-                                                        self.get_water_level(x, y+1),
-                                                        self.get_water_level(x, y-1)];
+                    let neighbors = self.get_neighbors_water_level(x, y);
                     let min = neighbors.iter().min();
                     if let Some(Some(min)) = min {
-                        if let Some(tile_level) = neighbors[0] {
-                            if tile_level == *min { to_be_visited.push((x+1, y, self.tiles[idx].water_level())); }
-                        }
-                        if let Some(tile_level) = neighbors[1] {
-                            if tile_level == *min { to_be_visited.push((x-1, y, self.tiles[idx].water_level())); }
-                        }
                         if let Some(tile_level) = neighbors[2] {
                             if tile_level == *min { to_be_visited.push((x, y+1, self.tiles[idx].water_level())); }
                         }
                         if let Some(tile_level) = neighbors[3] {
                             if tile_level == *min { to_be_visited.push((x, y-1, self.tiles[idx].water_level())); }
                         }
+                        if let Some(tile_level) = neighbors[0] {
+                            if tile_level == *min { to_be_visited.push((x+1, y, self.tiles[idx].water_level())); }
+                        }
+                        if let Some(tile_level) = neighbors[1] {
+                            if tile_level == *min { to_be_visited.push((x-1, y, self.tiles[idx].water_level())); }
+                        }
                     }
                 }
             },
             WaterEvent::Drain => {
                 if self.tiles[idx].height <= SEA_BOTTOM { return }
-                // if the level isn't lower than the previous tile, drain it
-                if self.tiles[idx].water_level() >= level {
+                // if there's water in the tile, drain it
+                if self.tiles[idx].water > 0 {
                     // let start = self.tiles[idx].water_level();
                     self.tiles[idx].remove_water(amount);
                     // println!("lowering water level from {} to {}" , start, self.tiles[idx].water_level());
-
-                    // spread to neighboring tiles with highest water level
-                    let neighbors = vec![self.get_water_level(x+1, y),
-                                                        self.get_water_level(x-1, y),
-                                                        self.get_water_level(x, y+1),
-                                                        self.get_water_level(x, y-1)];
-                    let max = neighbors.iter().max();
-                    if let Some(Some(max)) = max {
-                        if let Some(tile_level) = neighbors[0] {
-                            if tile_level == *max { to_be_visited.push((x+1, y, self.tiles[idx].water_level())); }
-                        }
-                        if let Some(tile_level) = neighbors[1] {
-                            if tile_level == *max { to_be_visited.push((x-1, y, self.tiles[idx].water_level())); }
-                        }
-                        if let Some(tile_level) = neighbors[2] {
-                            if tile_level == *max { to_be_visited.push((x, y+1, self.tiles[idx].water_level())); }
-                        }
-                        if let Some(tile_level) = neighbors[3] {
-                            if tile_level == *max { to_be_visited.push((x, y-1, self.tiles[idx].water_level())); }
-                        }
-                    }
+                    to_be_visited.push((x, y+1, self.tiles[idx].water_level()));
+                    to_be_visited.push((x, y-1, self.tiles[idx].water_level()));
+                    to_be_visited.push((x+1, y, self.tiles[idx].water_level()));
+                    to_be_visited.push((x-1, y, self.tiles[idx].water_level()));
                 }
             },
         }
