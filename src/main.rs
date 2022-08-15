@@ -3,8 +3,11 @@ mod map_builder;
 
 mod prelude {
     pub use bracket_lib::prelude::*;
+    pub use std::cmp;
+
     pub const SCREEN_WIDTH: i32 = 80;
     pub const SCREEN_HEIGHT: i32 = 50;
+
     pub use crate::map::*;
     pub use crate::map_builder::*;
 }
@@ -25,6 +28,19 @@ impl State {
 
 impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
+        if let Some(key) = ctx.key {
+            match key {
+                VirtualKeyCode::Space => { 
+                    println!("Flooding...");
+                    self.map.increase_water(0, 0, 1);
+                },
+                VirtualKeyCode::Return => { 
+                    println!("Flooding...");
+                    self.map.increase_water(1, 1, 1);
+                }
+                _ => {}
+            }
+        }
         ctx.cls();
         self.map.render(ctx);
     }
