@@ -26,10 +26,8 @@ impl MapTile {
         }
     }
     pub fn tile_type(&self)  -> TileType {
-        let tile_type =
-            if self.water > 0 { TileType::Water }
-            else { TileType::Flatland };
-        tile_type
+        if self.water > 0 { TileType::Water }
+        else { TileType::Flatland }
     }
     pub fn screen_glyph(&self) -> char {
         // let RADIX = 10;
@@ -108,22 +106,22 @@ impl Map {
         // println!("Flood visited {} tiles", self.counter);
     }
     // depth-first spread of water.
-    fn dfs_update(&mut self, x:i32 , y: i32, amount: i32, level: i32, visited: &mut Vec<Vec<bool>>, to_be_visited: &mut Vec<(i32, i32, i32)>) {
+    fn dfs_update(&mut self, x:i32 , y: i32, amount: i32, level: i32, visited: &mut [Vec<bool>], to_be_visited: &mut Vec<(i32, i32, i32)>) {
         let x_ = x as usize;
         let y_ = y as usize;
         let idx = map_idx(x, y);
 
         // check bounds
-        if x < 0 || x >= SCREEN_WIDTH { return };
-        if y < 0 || y >= SCREEN_HEIGHT { return };
-        if visited[x_][y_] == true { 
+        if !(0..SCREEN_WIDTH).contains(&x) { return };
+        if !(0..SCREEN_HEIGHT).contains(&y) { return };
+        if visited[x_][y_] { 
             return;
          }
 
         // mark as visited
         visited[x_][y_] = true;
 
-        self.counter = self.counter + 1;
+        self.counter += 1;
         // println!("Visiting {:?}", self.tiles[idx]);
         // println!("x: {}, y: {}, previous level: {}, water level: {}", x, y, level, self.tiles[idx].water_level());
 

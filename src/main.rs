@@ -33,6 +33,10 @@ impl GameState for State {
                 VirtualKeyCode::Space => { 
                     println!("Flooding...");
                     self.map.increase_water(0, 0, 1);
+                },
+                VirtualKeyCode::Return => { 
+                    println!("Flooding...");
+                    self.map.increase_water(1, 1, 1);
                 }
                 _ => {}
             }
