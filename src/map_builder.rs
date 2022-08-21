@@ -7,7 +7,7 @@ pub struct MapBuilder {
 impl MapBuilder {
     fn fill_with_random_land_tiles(&mut self, rng: &mut RandomNumberGenerator) {
         self.map.tiles.iter_mut()
-            .for_each(|t| *t = MapTile::new(SEA_LEVEL + rng.range(0,MAX_HEIGHT-SEA_LEVEL+1)));
+            .for_each(|t| *t = MapTile::new(SEA_LEVEL + rng.range(2,MAX_HEIGHT-SEA_LEVEL+1)));
     }
     fn fill_rect(&mut self, rect: Rect, tile: MapTile) {
         rect.for_each(|p| {
@@ -26,11 +26,14 @@ impl MapBuilder {
         // river
         let river_col = rng.range(6, (SCREEN_WIDTH / 2) - 6);
         let river_width = rng.range(1, 3);
-        self.fill_rect(Rect::with_size(river_col, coast_row, river_width, SCREEN_HEIGHT-coast_row), MapTile::new(SEA_BOTTOM));
+        self.fill_rect(Rect::with_size(river_col, coast_row+1, river_width, SCREEN_HEIGHT-coast_row), MapTile::new(SEA_BOTTOM+1));
+        // add river source
+        self.map.river_source = Coordinate::new(river_col, SCREEN_HEIGHT-1);
+        println!("river source: {}, {}", river_col, SCREEN_HEIGHT-1);
     }
     pub fn new(rng: &mut RandomNumberGenerator) -> Self {
         let mut mb = MapBuilder {
-            map: Map::new(),
+            map: Map::new(Coordinate { x: 0, y: 0 }),
         };
         mb.build_random_map(rng);
         mb

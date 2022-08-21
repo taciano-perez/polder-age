@@ -6,6 +6,7 @@ pub enum Command {
     Drain,
     RaiseHeight,
     LowerHeight,
+    BuildDike,
     RestartGame,
 }
 
@@ -13,11 +14,11 @@ pub fn execute_command(state: &mut State, command: Command) {
     match command {
         Command::Flood => {
             println!("Flooding...");
-            state.map.trigger_event(state.selected_tile.x, state.selected_tile.y, WaterEvent::Flood, 1);
+            // state.map.trigger_event(state.selected_tile.x, state.selected_tile.y, WaterEvent::Flood, 1);
         },
         Command::Drain => {
             println!("Draining...");
-            state.map.trigger_event(state.selected_tile.x, state.selected_tile.y, WaterEvent::Drain, 1);
+            // state.map.trigger_event(state.selected_tile.x, state.selected_tile.y, WaterEvent::Drain, 1);
         },
         Command::RaiseHeight => {
             println!("Increasing height...");
@@ -26,6 +27,10 @@ pub fn execute_command(state: &mut State, command: Command) {
         Command::LowerHeight => {
             println!("Decreasing height...");
             state.map.lower_height(state.selected_tile.x, state.selected_tile.y);
+        }
+        Command::BuildDike => {
+            println!("Building dike...");
+            state.map.build_dike(state.selected_tile.x, state.selected_tile.y);
         }
         Command::RestartGame => {
             println!("Restarting game...");

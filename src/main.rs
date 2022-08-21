@@ -1,5 +1,6 @@
 mod map;
 mod map_builder;
+mod tile_improvement;
 mod state;
 mod command;
 
@@ -7,12 +8,15 @@ mod prelude {
     pub use bracket_lib::prelude::*;
     pub use bracket_terminal::prelude::*;
     pub use std::cmp;
+    pub use std::cmp::Ordering;
+    pub use std::collections::BinaryHeap;
 
     pub const SCREEN_WIDTH: i32 = 80;
     pub const SCREEN_HEIGHT: i32 = 50;
 
     pub use crate::map::*;
     pub use crate::map_builder::*;
+    pub use crate::tile_improvement::*;
     pub use crate::state::*;
     pub use crate::command::*;
 }
@@ -29,6 +33,9 @@ impl GameState for State {
                 VirtualKeyCode::D => { 
                     self.active_command = Command::Drain;
                 }
+                VirtualKeyCode::B => { 
+                    self.active_command = Command::BuildDike;
+                }
                 VirtualKeyCode::R => { 
                     self.active_command = Command::RaiseHeight;
                 }
@@ -44,6 +51,17 @@ impl GameState for State {
                 _ => {}
             }
         }
+
+        // process water flow
+        if self.count < 1 {
+            println!("-----TICK {}----", self.count);
+            if self.map.valid_coordinates(self.map.river_source.x, self.map.river_source.y) {
+                self.map.tiles[map_idx(self.map.river_source.x, self.map.river_source.y)].add_water(1);
+                self.map.recalculate_water(self.map.river_source);
+            }
+            self.count += 1;
+        }
+
         ctx.cls();
         self.map.render(ctx);
 

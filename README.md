@@ -49,6 +49,7 @@ You are the leader of a small farming community constantly threatened by floods,
 ## Stretch Goals
 - Introduce units.
 - Animate tiles/units/improvements.
+- Music and sound effects.
 - Web deployment with WASM.
 - Random events (beyond flooding) with positive and/or negative consequences (similar to Crusader Kings)
 - Seasons.
@@ -56,3 +57,55 @@ You are the leader of a small farming community constantly threatened by floods,
 - Add competing nations and introduce war mechanics. War mechanics would be turn-based, similar to Imperialism.
 - Introduce commerce.
 - Add governants with traits that modify gameplay (a la Crusader Kings).
+
+
+### Notes for water spread algorithm
+
+every turn:
+
+Increase one water on river source.
+recalculate_water (source)
+
+recalculate_water (origin)
+
+if origin is of drain type, set water to default and return
+
+if origin has water {
+	while (there's a lower water_level neighbor) {
+		transfer one water from origin to neighbor
+		recalculate_water(neighbor)
+	}
+}
+while (there's a higher water_level neighbor with water) {
+	transfer water from neighbor to origin
+	recalculate_water(neighbor)
+}
+
+
+
+####
+
+every turn:
+Increase one water on river source.
+
+Recursively (starting on source):
+- neighbor = first lowest neighboring tile
+- if neighbor is of drain type, then origin.water -= 1
+- if origin.water_level > neighbor.water_level+1, then neighbor.water += 1, origin.water -= 1
+- Call recursive (passing neighbor as node)
+
+To trigger a flood:
+- Sea: increase one water per turn in a sea tile
+- trigger recalculation of that tile
+
+- Increase two (or more) water per turn on river source
+
+
+Recalculate (origin):
+if origin.water > 0
+	- neighbor = first lowest neighboring tile
+	- if neighbor is of drain type, then origin.water -= 1, return
+	- if origin.water_level > neighbor.water_level+1, then neighbor.water += 1, origin.water -= 1
+	- else
+		- neighbor = first highest neighboring tile
+- Call recursive (passing neighbor as node)
