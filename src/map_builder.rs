@@ -31,11 +31,29 @@ impl MapBuilder {
         self.map.river_source = Coordinate::new(river_col, SCREEN_HEIGHT-1);
         println!("river source: {}, {}", river_col, SCREEN_HEIGHT-1);
     }
-    pub fn new(rng: &mut RandomNumberGenerator) -> Self {
+    fn build_fixed_map(&mut self) {
+        // land
+        self.fill_rect(Rect::with_size(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT), MapTile::new(SEA_LEVEL+2));
+        // sea
+        let coast_row = SCREEN_HEIGHT / 4;
+        self.fill_rect(Rect::with_size(0, 0, SCREEN_WIDTH, coast_row), MapTile::new(SEA_BOTTOM));
+        // river
+        let river_col = SCREEN_WIDTH / 4;
+        let river_width = 2;
+        self.fill_rect(Rect::with_size(river_col, coast_row+1, river_width, SCREEN_HEIGHT-coast_row), MapTile::new(SEA_BOTTOM+1));
+        // add river source
+        self.map.river_source = Coordinate::new(river_col, SCREEN_HEIGHT-1);
+        println!("river source: {}, {}", river_col, SCREEN_HEIGHT-1);
+    }
+    pub fn new(rng: &mut RandomNumberGenerator, generate_random_map: bool) -> Self {
         let mut mb = MapBuilder {
             map: Map::new(Coordinate { x: 0, y: 0 }),
         };
-        mb.build_random_map(rng);
+        if generate_random_map {
+            mb.build_random_map(rng);
+        } else  {
+            mb.build_fixed_map();
+        }
         mb
     }
 }

@@ -57,7 +57,8 @@ impl GameState for State {
             println!("-----TICK {}----", self.count);
             if self.map.valid_coordinates(self.map.river_source.x, self.map.river_source.y) {
                 self.map.tiles[map_idx(self.map.river_source.x, self.map.river_source.y)].add_water(1);
-                self.map.recalculate_water(self.map.river_source);
+                //self.map.recalculate_water(self.map.river_source);
+                self.map.recalculate_sea_level(SEA_LEVEL+1);
             }
             self.count += 1;
         }

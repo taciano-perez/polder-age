@@ -73,7 +73,7 @@ pub struct MapTile {
 
 impl MapTile {
     pub fn new(height: i32) -> Self {
-    let water = if height <= SEA_LEVEL {SEA_LEVEL - height} else {0};
+        let water = if height <= SEA_LEVEL {SEA_LEVEL - height} else {0};
         Self {
             height,
             water,
@@ -96,19 +96,19 @@ impl MapTile {
         self.height = cmp::max(self.height-1, SEA_BOTTOM);
     }
     pub fn add_water(&mut self, amount: i32) {
-        // let start = self.water;
+            // let start = self.water;
         // SEA_BOTTOM never increases or decreases
-        if self.height > SEA_BOTTOM {
+        // if self.height > SEA_BOTTOM {
             self.water = cmp::min(self.water+amount, MAX_HEIGHT-self.height);
-        }
+        // }
         // self.water += amount;
         // println!("Added {} water, from {} to {}", amount, start, self.water);
     }
 pub fn remove_water(&mut self, amount: i32) {
         // let start = self.water;
-        if self.height > SEA_BOTTOM {
+        // if self.height > SEA_BOTTOM {
             self.water = cmp::max(self.water-amount, 0);
-        }
+        // }
         // println!("Removed {} water, from {} to {}", amount, start, self.water);
     }
     pub fn set_improvement(&mut self, improvement: TileImprovement) {
@@ -178,6 +178,7 @@ pub fn remove_water(&mut self, amount: i32) {
 pub struct Map {
     pub tiles: Vec<MapTile>,
     pub river_source: Coordinate,
+    pub connected_to_sea: Vec<usize>,
 }
 
 pub fn map_idx(x: i32, y: i32) -> usize {
@@ -189,6 +190,7 @@ impl Map {
         Self {
             tiles: vec![MapTile::new(0); NUM_TILES],
             river_source,
+            connected_to_sea: Vec::new(),
         }
     }
     pub fn increase_height(&mut self, x: i32, y: i32) {
@@ -220,6 +222,7 @@ impl Map {
             self.recalculate_water_recursive(pos, &mut to_be_recalculated, &mut visited);
         }
     }
+    
     fn recalculate_water_recursive(&mut self, pos: Coordinate, to_be_recalculated: &mut VecDeque<Coordinate>, visited: &mut [Vec<bool>]) {
         let x = pos.x;
         let y = pos.y;
@@ -266,6 +269,49 @@ impl Map {
         //     recalculate_water(neighbor)
         // }
     }
+
+
+    /* NEW CODE */
+    pub fn recalculate_sea_level(&mut self, new_sea_level: i32) {
+        self.connected_to_sea = Vec::new();
+        let mut visited = Vec::new();
+        let mut to_visit = Vec::new();
+        to_visit.push(Coordinate::new(0, 0));
+        while let Some(pos) = to_visit.pop() {
+            self.recalculate_sea_level_recursive(new_sea_level, pos, &mut visited, &mut to_visit);
+        }
+    }
+    fn recalculate_sea_level_recursive(&mut self, new_sea_level: i32, pos: Coordinate, visited: &mut Vec<usize>, to_visit: &mut Vec<Coordinate>) {
+        if self.valid_coordinates(pos.x, pos.y) {
+            let pos_idx = map_idx(pos.x, pos.y);
+            if !visited.contains(&pos_idx) {
+                if self.tiles[pos_idx].water_level() < new_sea_level {
+                    // increase water level
+                    while self.tiles[pos_idx].water_level() != new_sea_level {
+                        self.tiles[pos_idx].add_water(1);
+                    }
+                    // it's connected
+                    self.connected_to_sea.push(pos_idx);
+                } else if self.tiles[pos_idx].water_level() > new_sea_level {
+                    // decrease water level
+                    while self.tiles[pos_idx].water_level() != new_sea_level && self.tiles[pos_idx].water > 0 {
+                        self.tiles[pos_idx].remove_water(1);
+                        println!("decreasing {},{} by one, water_level: {}, new_sea_level: {}, water: {}", pos.x, pos.y, self.tiles[pos_idx].water_level(), new_sea_level, self.tiles[pos_idx].water);
+                    }
+                    // is it still connected?
+                    if self.tiles[pos_idx].water > 0 {
+                        self.connected_to_sea.push(pos_idx);
+                    }
+                }
+            }
+            visited.push(pos_idx);
+            // visit neighbors
+            if self.valid_coordinates(pos.x-1, pos.y) && !visited.contains(&map_idx(pos.x-1, pos.y)) { to_visit.push(Coordinate { x: pos.x-1, y: pos.y }); }
+            if self.valid_coordinates(pos.x+1, pos.y) && !visited.contains(&map_idx(pos.x+1, pos.y)) { to_visit.push(Coordinate { x: pos.x+1, y: pos.y }); }
+            if self.valid_coordinates(pos.x, pos.y-1) && !visited.contains(&map_idx(pos.x, pos.y-1)) { to_visit.push(Coordinate { x: pos.x, y: pos.y-1 }); }
+            if self.valid_coordinates(pos.x, pos.y+1) && !visited.contains(&map_idx(pos.x, pos.y+1)) { to_visit.push(Coordinate { x: pos.x, y: pos.y+1 }); }
+        }
+    }
     fn valid_neighbor(&self, x: i32, y: i32) -> Option<Coordinate> {
         if self.valid_coordinates(x, y) {
             Some(Coordinate::new(x, y))
@@ -282,4 +328,144 @@ impl Map {
             }
         }
     }
+}
+
+#[cfg(test)]
+mod map_tests {
+    use crate::prelude::*;
+
+    #[test]
+    fn increase_sea_level() {
+        let mut rng = RandomNumberGenerator::new();
+        let map_builder = MapBuilder::new(&mut rng, false);
+        let mut map = map_builder.map;
+
+        // ENSURE MAP HAS A DRY CANAL AND LAKE
+        // canal
+        let tile_idx_canal1 = map_idx(23, 19);
+        let tile_idx_canal2 = map_idx(24, 19);
+        let tile_idx_canal3 = map_idx(25, 19);
+        map.tiles[tile_idx_canal1] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_canal2] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_canal3] = MapTile::new(SEA_LEVEL);
+        // lake
+        let tile_idx_lake_center = map_idx(26, 19);
+        let tile_idx_lake_up = map_idx(26, 18);
+        let tile_idx_lake_down = map_idx(26, 20);
+        let tile_idx_lake_right = map_idx(27, 19);
+        map.tiles[tile_idx_lake_center] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_lake_up] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_lake_down] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_lake_right] = MapTile::new(SEA_LEVEL);
+        // embankment
+        let tile_idx_emb_canal_top1 = map_idx(23, 18);
+        let tile_idx_emb_canal_top2 = map_idx(24, 18);
+        let tile_idx_emb_canal_top3 = map_idx(25, 18);
+        let tile_idx_emb_canal_bottom1 = map_idx(23, 20);
+        let tile_idx_emb_canal_bottom2 = map_idx(24, 20);
+        let tile_idx_emb_canal_bottom3 = map_idx(25, 20);
+        map.tiles[tile_idx_emb_canal_top1] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_top2] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_top3] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_bottom1] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_bottom2] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_bottom3] = MapTile::new(MAX_HEIGHT);
+
+        let lake_center_tile = map.tiles[tile_idx_lake_center];
+        assert_eq!(lake_center_tile.water, 0);  // no water
+
+        // increase sea level
+        map.recalculate_sea_level(SEA_LEVEL+1);
+        // check that canal and lake have been filled
+        assert_eq!(map.tiles[tile_idx_canal1].water, 1);
+        assert_eq!(map.tiles[tile_idx_canal2].water, 1);
+        assert_eq!(map.tiles[tile_idx_canal3].water, 1);
+        assert_eq!(map.tiles[tile_idx_lake_center].water, 1);
+        assert_eq!(map.tiles[tile_idx_lake_up].water, 1);
+        assert_eq!(map.tiles[tile_idx_lake_down].water, 1);
+        assert_eq!(map.tiles[tile_idx_lake_right].water, 1);
+        // check that embankment has NOT been filled
+        assert_eq!(map.tiles[tile_idx_emb_canal_top1].water, 0);
+        assert_eq!(map.tiles[tile_idx_emb_canal_top2].water, 0);
+        assert_eq!(map.tiles[tile_idx_emb_canal_top3].water, 0);
+        assert_eq!(map.tiles[tile_idx_emb_canal_bottom1].water, 0);
+        assert_eq!(map.tiles[tile_idx_emb_canal_bottom2].water, 0);
+        assert_eq!(map.tiles[tile_idx_emb_canal_bottom3].water, 0);
+
+    }
+    #[test]
+    fn decrease_sea_level() {
+        let mut rng = RandomNumberGenerator::new();
+        let map_builder = MapBuilder::new(&mut rng, false);
+        let mut map = map_builder.map;
+
+        // ENSURE MAP HAS A DRY CANAL AND LAKE
+        // canal
+        let tile_idx_canal1 = map_idx(23, 19);
+        let tile_idx_canal2 = map_idx(24, 19);
+        let tile_idx_canal3 = map_idx(25, 19);
+        map.tiles[tile_idx_canal1] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_canal2] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_canal3] = MapTile::new(SEA_LEVEL);
+        // lake
+        let tile_idx_lake_center = map_idx(26, 19);
+        let tile_idx_lake_up = map_idx(26, 18);
+        let tile_idx_lake_down = map_idx(26, 20);
+        let tile_idx_lake_right = map_idx(27, 19);
+        map.tiles[tile_idx_lake_center] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_lake_up] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_lake_down] = MapTile::new(SEA_LEVEL);
+        map.tiles[tile_idx_lake_right] = MapTile::new(SEA_LEVEL);
+        // embankment
+        let tile_idx_emb_canal_top1 = map_idx(23, 18);
+        let tile_idx_emb_canal_top2 = map_idx(24, 18);
+        let tile_idx_emb_canal_top3 = map_idx(25, 18);
+        let tile_idx_emb_canal_bottom1 = map_idx(23, 20);
+        let tile_idx_emb_canal_bottom2 = map_idx(24, 20);
+        let tile_idx_emb_canal_bottom3 = map_idx(25, 20);
+        map.tiles[tile_idx_emb_canal_top1] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_top2] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_top3] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_bottom1] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_bottom2] = MapTile::new(MAX_HEIGHT);
+        map.tiles[tile_idx_emb_canal_bottom3] = MapTile::new(MAX_HEIGHT);
+
+        let lake_center_tile = map.tiles[tile_idx_lake_center];
+        assert_eq!(lake_center_tile.water, 0);  // no water
+
+        // increase sea level to flood lake
+        map.recalculate_sea_level(SEA_LEVEL+1);
+
+        // now decrease it again
+        map.recalculate_sea_level(SEA_LEVEL);
+
+        // check that canal and lake have been emptied
+        assert_eq!(map.tiles[tile_idx_canal1].water, 0);
+        assert_eq!(map.tiles[tile_idx_canal2].water, 0);
+        assert_eq!(map.tiles[tile_idx_canal3].water, 0);
+        assert_eq!(map.tiles[tile_idx_lake_center].water, 0);
+        assert_eq!(map.tiles[tile_idx_lake_up].water, 0);
+        assert_eq!(map.tiles[tile_idx_lake_down].water, 0);
+        assert_eq!(map.tiles[tile_idx_lake_right].water, 0);
+
+    }
+    #[test]
+    fn decrease_height_inner_region_isolated_from_sea() {
+        // create lake
+        // lower height of neighboring tile
+        // check if only expected tiles have been filled out
+    }
+    #[test]
+    fn increase_height_inner_region_isolated_from_sea() {
+        // create lake
+        // flood
+        // check if only expected tiles have been filled out
+    }
+    #[test]
+    fn flood_inner_region_connecting_to_sea() {
+        // create lake that will connect to sea if more water is added
+        // flood
+        // check the everything connecting to sea has been filled
+    }
+
 }

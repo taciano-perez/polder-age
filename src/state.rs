@@ -10,7 +10,7 @@ pub struct State {
 impl State {
     pub fn new() -> Self {
         let mut rng = RandomNumberGenerator::new();
-        let map_builder = MapBuilder::new(&mut rng);
+        let map_builder = MapBuilder::new(&mut rng, false);
         Self { map: map_builder.map, active_command: Command::Flood, selected_tile: Coordinate::new(0, 0), count: 0 }
     }
 }
